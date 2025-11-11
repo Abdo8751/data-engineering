@@ -18,16 +18,25 @@ import sys
 
 # --- DATA PATH for Vercel/Deployment ---
 # Vercel accesses files from the root directory of the repository.
-DATA_PATH = "merged_collisions.csv"
+# ===============================================
+# CONFIGURATION
+# ===============================================
+
+# Use the file name directly as Vercel runs the function from the root.
+DATA_PATH = "merged_collisions.csv" 
 
 try:
-    # Set encoding to 'utf-8' for robust deployment, or 'latin-1' if needed
-    df = pd.read_csv(DATA_PATH, encoding='utf-8')
+    # Use the default encoding or specify 'latin-1' if 'utf-8' causes issues with data characters.
+    df = pd.read_csv(DATA_PATH, encoding='utf-8') 
 except FileNotFoundError:
-    # If file not found in deployment, log and create an empty DataFrame
-    print(f"Deployment Error: Could not find data file at {DATA_PATH}. Check file commit status.")
+    # Print an error message that will appear in Vercel logs
+    print(f"Deployment Error: Data file '{DATA_PATH}' not found. Check your GitHub commit.")
+    # Log the current working directory to help debug the path
+    print(f"Current working directory: {os.getcwd()}")
+    # Fallback to an empty DataFrame to allow the app to run and show the error message
     df = pd.DataFrame()
 except Exception as e:
+    # Catch other reading errors (e.g., encoding, corruption)
     print(f"An error occurred loading the CSV: {e}")
     df = pd.DataFrame()
 
