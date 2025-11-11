@@ -16,27 +16,53 @@ import sys
 # CONFIGURATION
 # ===============================================
 
-# --- DATA PATH for Vercel/Deployment ---
+# ... (Keep all your imports at the top)
+
+# ===============================================
+# CONFIGURATION
+# ===============================================
+
 DATA_PATH = "merged_collisions.csv" 
-df = pd.DataFrame()  # Initialize df here to ensure it always exists
+df = pd.DataFrame() # Initialize df to ensure it always exists
 
 try:
-    # Use the file name directly as Vercel runs the function from the root.
-    df = pd.read_csv(DATA_PATH, encoding='utf-8') 
+    # 1. Attempt to read the file directly (Standard Vercel method)
+    df = pd.read_csv(DATA_PATH, encoding='utf-8')
+    print("SUCCESS: Data loaded successfully using direct path.")
+
 except FileNotFoundError:
-    # Log that the file was not found
-    print(f"DEPLOYMENT ERROR: Data file '{DATA_PATH}' not found. Check GitHub commit/case.")
+    print(f"ERROR: File not found at standard path: {DATA_PATH}")
     
+    # 2. Attempt to read the file relative to the execution script's directory
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        fallback_path = os.path.join(current_dir, DATA_PATH)
+        df = pd.read_csv(fallback_path, encoding='utf-8')
+        print(f"SUCCESS: Data loaded successfully using fallback path: {fallback_path}")
+        
+    except FileNotFoundError:
+        # If both fail, log the final error
+        print("CRITICAL ERROR: Data file not found using any known deployment path.")
+        
+    except Exception as e:
+        print(f"CRITICAL ERROR: An error occurred during file read attempt: {e}")
+
 except Exception as e:
-    # Log any other reading errors
-    print(f"DEPLOYMENT CRASH: An error occurred loading the CSV: {e}")
+    # Catch other read errors (like bad CSV format)
+    print(f"CRITICAL ERROR: Failed to load CSV file due to read error: {e}")
 
 # If data loading failed, the empty DataFrame created above is used.
 if df.empty:
-    print("Warning: Dashboard running with empty data (Showing no charts).")
+    print("WARNING: Dashboard running with empty data (CRITICAL ERROR occurred).")
     
-# ... rest of your code ...
-# (The code below this point remains the same, assuming it references 'df' correctly)
+# Normalize column names, etc.
+if not df.empty:
+    df.columns = [c.strip() for c in df.columns]
+    # Extract Year from CRASH DATE if present
+    if 'CRASH DATE' in df.columns:
+        df['Year'] = pd.to_datetime(df['CRASH DATE'], errors='coerce').dt.year.astype('Int64')
+
+# ... (The rest of your code remains the same)
 
 # Check for empty data immediately
 if df.empty:
