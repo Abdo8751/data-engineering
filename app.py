@@ -17,28 +17,26 @@ import sys
 # ===============================================
 
 # --- DATA PATH for Vercel/Deployment ---
-# Vercel accesses files from the root directory of the repository.
-# ===============================================
-# CONFIGURATION
-# ===============================================
-
-# Use the file name directly as Vercel runs the function from the root.
 DATA_PATH = "merged_collisions.csv" 
+df = pd.DataFrame()  # Initialize df here to ensure it always exists
 
 try:
-    # Use the default encoding or specify 'latin-1' if 'utf-8' causes issues with data characters.
+    # Use the file name directly as Vercel runs the function from the root.
     df = pd.read_csv(DATA_PATH, encoding='utf-8') 
 except FileNotFoundError:
-    # Print an error message that will appear in Vercel logs
-    print(f"Deployment Error: Data file '{DATA_PATH}' not found. Check your GitHub commit.")
-    # Log the current working directory to help debug the path
-    print(f"Current working directory: {os.getcwd()}")
-    # Fallback to an empty DataFrame to allow the app to run and show the error message
-    df = pd.DataFrame()
+    # Log that the file was not found
+    print(f"DEPLOYMENT ERROR: Data file '{DATA_PATH}' not found. Check GitHub commit/case.")
+    
 except Exception as e:
-    # Catch other reading errors (e.g., encoding, corruption)
-    print(f"An error occurred loading the CSV: {e}")
-    df = pd.DataFrame()
+    # Log any other reading errors
+    print(f"DEPLOYMENT CRASH: An error occurred loading the CSV: {e}")
+
+# If data loading failed, the empty DataFrame created above is used.
+if df.empty:
+    print("Warning: Dashboard running with empty data (Showing no charts).")
+    
+# ... rest of your code ...
+# (The code below this point remains the same, assuming it references 'df' correctly)
 
 # Check for empty data immediately
 if df.empty:
