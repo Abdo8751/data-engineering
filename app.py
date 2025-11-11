@@ -1,10 +1,6 @@
-# ===Now we will create the interactive dashboard inshallah and put it on githab= ===
+# === app.py for GitHub/Vercel Deployment inshallah yshtaghal ===
 
-# 1) Install libs (first time)
-!pip install -q dash==2.11.0 dash-bootstrap-components pandas plotly dash-table # Removed jupyter-dash
-
-# 2) App code
-# Using standard dash instead of jupyter_dash for stability
+# 1) Imports
 from dash import Dash, dcc, html, Input, Output, State, callback_context, dash_table
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -14,27 +10,31 @@ import io
 import plotly.io as pio
 import re
 import os
-# Removed ctypes and thread cleanup logic as it's no longer necessary
+import sys
 
 # ===============================================
 # CONFIGURATION
 # ===============================================
 
-# --- CORRECTED DATA PATH ---
-DATA_PATH = "/content/merged_collisions.csv"
-if not os.path.exists(DATA_PATH) and os.path.exists("/content/dataset.csv"):
-    DATA_PATH = "/content/dataset.csv"
-# ===============================================
+# --- DATA PATH for Vercel/Deployment ---
+# Vercel accesses files from the root directory of the repository.
+DATA_PATH = "merged_collisions.csv"
 
 try:
-    df = pd.read_csv(DATA_PATH)
+    # Set encoding to 'utf-8' for robust deployment, or 'latin-1' if needed
+    df = pd.read_csv(DATA_PATH, encoding='utf-8')
 except FileNotFoundError:
-    print(f"Error: Could not find '{DATA_PATH}'. Please ensure the file is uploaded to the Colab environment.")
+    # If file not found in deployment, log and create an empty DataFrame
+    print(f"Deployment Error: Could not find data file at {DATA_PATH}. Check file commit status.")
+    df = pd.DataFrame()
+except Exception as e:
+    print(f"An error occurred loading the CSV: {e}")
     df = pd.DataFrame()
 
+# Check for empty data immediately
 if df.empty:
-    print("Dashboard will run with empty data and show an error message.")
-
+    print("Warning: Dashboard running with empty data.")
+    
 # Normalize column names (safe canonical names)
 df.columns = [c.strip() for c in df.columns]
 
@@ -55,8 +55,6 @@ lon_col = 'LONGITUDE' if 'LONGITUDE' in df.columns else None
 person_type_col = 'PERSON_TYPE' if 'PERSON_TYPE' in df.columns else None
 
 # Helper functions (uniq_sorted, parse_search, create_html_report)
-# ... (functions remain the same) ...
-
 def uniq_sorted(col):
     if col and col in df.columns:
         temp_df = df[col].dropna()
@@ -101,12 +99,12 @@ def create_html_report(figs: dict, df_filtered: pd.DataFrame):
     return "\n".join(html_parts).encode('utf-8')
 
 
-# App init - Switched to standard Dash
+# App init - Standard Dash
 app = Dash(__name__, external_stylesheets=[dbc.themes.LUX], suppress_callback_exceptions=True)
 
 # Layout setup (same as before)
 app.layout = dbc.Container([
-    dbc.Row(dbc.Col(html.H2("Interactive Collisions Dashboard (Standard Dash)", className="text-primary mt-3 mb-3"))),
+    dbc.Row(dbc.Col(html.H2("Interactive Collisions Dashboard", className="text-primary mt-3 mb-3"))),
     dbc.Row([
         # Filter Column (Left)
         dbc.Col([
@@ -167,9 +165,7 @@ app.layout = dbc.Container([
     ])
 ], fluid=True)
 
-# Callbacks (same as before, using standard Dash app context)
-# ... (all callback functions remain the same) ...
-
+# Callbacks (unchanged)
 @app.callback(
     Output('status', 'children'),
     Output('bar-chart', 'figure'),
@@ -189,7 +185,7 @@ app.layout = dbc.Container([
 def update_all(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, factor_sel, injury_sel):
 
     if df.empty:
-        empty_fig = px.scatter(title="Data not loaded. Check path and upload 'merged_collisions.csv'.")
+        empty_fig = px.scatter(title="Data not loaded. Check file commitment.")
         return "Data not loaded.", empty_fig, empty_fig, empty_fig, empty_fig, empty_fig, []
 
     if not n_clicks:
@@ -331,6 +327,11 @@ def download_report(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, fact
     filename = f"report_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.html"
     return dcc.send_bytes(html_bytes, filename=filename)
 
-# Run the app using a stable environment flag
-# This uses the default Dash server and relies on Colab's port forwarding.
-app.run_server(mode='jupyterlab', host='0.0.0.0', port=8051)
+# === VERCEL DEPLOYMENT ENTRY POINT ===
+# Vercel needs access to the underlying Flask server instance.
+# We create a variable 'server' that points to the Dash app's Flask server.
+server = app.server
+
+# This block is for local testing only. Remove or comment out for Vercel deployment.
+# if __name__ == '__main__':
+#     app.run_server(debug=True, host='0.0.0.0', port=8051)
