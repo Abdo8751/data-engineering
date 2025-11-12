@@ -27,10 +27,9 @@ The final, functional dashboard is hosted on PythonAnywhere.
 
 👥 Team Members and Contributions
 
-Name                                            Contribution
 
 
-yousef moataz                                   Led the setup of the project’s Colab notebook and was responsible for the complete data cleaning process, including                                                 both pre- and post-integration phases. Ensured data consistency, handled missing values, and standardized
+yousef moataz:                                      Led the setup of the project’s Colab notebook and was responsible for the complete data cleaning process, including                                                 both pre- and post-integration phases. Ensured data consistency, handled missing values, and standardized
                                                 formats across datasets. Additionally, contributed to the visualization phase by designing and developing an
                                                 interactive Power BI dashboard that highlights key insights and supports dynamic data exploration.
 
