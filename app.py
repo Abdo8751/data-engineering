@@ -1,4 +1,4 @@
-# === Your BASE Code (Run this in your Colab notebook) ===
+# === Paste this whole cell into your Colab notebook and run ===
 
 # 1) Install libs (first time)
 !pip install -q dash==2.11.0 dash-bootstrap-components pandas plotly dash-table
@@ -44,10 +44,10 @@ if 'CRASH DATE' in df.columns:
 
 # --- CORE COLUMN DEFINITIONS (FORCED to use your exact names) ---
 borough_col = 'BOROUGH'
-year_col = 'Year'
-vehicle_col = 'VEHICLE TYPE CODE 1' # Still defined for filtering, but dropdown is removed
+year_col = 'Year' # This is the unified column created above
+vehicle_col = 'VEHICLE TYPE CODE 1'
 contrib_col = 'CONTRIBUTING FACTOR VEHICLE 1'
-injury_col = 'PERSON_INJURY' # Still defined for filtering, but dropdown is removed
+injury_col = 'PERSON_INJURY'
 lat_col = 'LATITUDE'
 lon_col = 'LONGITUDE'
 person_type_col = 'PERSON_TYPE'
@@ -114,7 +114,7 @@ def create_html_report(figs: dict, df_filtered: pd.DataFrame):
 # App init
 app = Dash(__name__, external_stylesheets=[dbc.themes.LUX], suppress_callback_exceptions=True)
 
-# Layout setup (Pie Chart and Heatmap tabs/filters removed)
+# Layout setup 
 app.layout = dbc.Container([
     dbc.Row(dbc.Col(html.H2("Interactive Collisions Dashboard (Standard Dash)", className="text-primary mt-3 mb-3"))),
     dbc.Row([
@@ -133,24 +133,17 @@ app.layout = dbc.Container([
             dcc.Dropdown(id='year-filter', options=uniq_sorted(year_col), multi=True, placeholder="Select Year(s)"),
             html.Br(),
 
-            # --- VEHICLE & INJURY FILTERS REMOVED ---
-            # html.Label("Vehicle Type"),
-            # dcc.Dropdown(id='vehicle-filter', options=uniq_sorted(vehicle_col), multi=True, placeholder="Select Vehicle Type(s)"),
-            # html.Br(),
+            html.Label("Vehicle Type"),
+            dcc.Dropdown(id='vehicle-filter', options=uniq_sorted(vehicle_col), multi=True, placeholder="Select Vehicle Type(s)"),
+            html.Br(),
 
             html.Label("Contributing Factor"),
             dcc.Dropdown(id='factor-filter', options=uniq_sorted(contrib_col), multi=True, placeholder="Select Factor(s)"),
             html.Br(),
 
-            # html.Label("Injury Type"),
-            # dcc.Dropdown(id='injury-filter', options=uniq_sorted(injury_col), multi=True, placeholder="Select Injury Type(s)"),
-            # html.Br(),
-            
-            # --- HIDDEN DUMMY DROPDOWNS TO AVOID CALLBACK ERRORS ---
-            # We keep the IDs in the callback but use hidden dropdowns in case the colleague forgets to delete them later
-            dcc.Dropdown(id='vehicle-filter', style={'display': 'none'}),
-            dcc.Dropdown(id='injury-filter', style={'display': 'none'}),
-
+            html.Label("Injury Type"),
+            dcc.Dropdown(id='injury-filter', options=uniq_sorted(injury_col), multi=True, placeholder="Select Injury Type(s)"),
+            html.Br(),
 
             dbc.Button("Generate Report", id='generate-btn', color='primary', className="me-2"),
             dbc.Button("Download Report (HTML)", id='download-btn', color='secondary'),
@@ -167,10 +160,10 @@ app.layout = dbc.Container([
                     dcc.Loading(dcc.Graph(id='borough-injuries-chart', config={'displayModeBar': False}), type='default'),
                     dcc.Loading(dcc.Graph(id='killed-injured-chart', config={'displayModeBar': False}), type='default'),
                 ]),
-                # dcc.Tab(label='Distribution', value='tab-2', children=[
-                #     dcc.Loading(dcc.Graph(id='pie-chart', config={'displayModeBar': False}), type='default'),
-                #     dcc.Loading(dcc.Graph(id='heatmap', config={'displayModeBar': False}), type='default'),
-                # ]),
+                dcc.Tab(label='Distribution', value='tab-2', children=[
+                    dcc.Loading(dcc.Graph(id='pie-chart', config={'displayModeBar': False}), type='default'),
+                    dcc.Loading(dcc.Graph(id='heatmap', config={'displayModeBar': False}), type='default'),
+                ]),
                 dcc.Tab(label='Map & Table', value='tab-3', children=[
                     dcc.Loading(dcc.Graph(id='map-chart', config={'scrollZoom': True}), type='default'),
                     html.H5("Filtered Data Sample"),
@@ -186,13 +179,13 @@ app.layout = dbc.Container([
     ])
 ], fluid=True)
 
-# Callbacks - Updated Output (6 outputs now)
+# Callbacks - Updated Output for all 8 plots
 @app.callback(
     Output('status', 'children'),
     Output('bar-chart', 'figure'),
     Output('line-chart', 'figure'),
-    # Output('pie-chart', 'figure'), # REMOVED
-    # Output('heatmap', 'figure'),    # REMOVED
+    Output('pie-chart', 'figure'),
+    Output('heatmap', 'figure'), # This will now be the Grouped Bar Chart
     Output('map-chart', 'figure'),
     Output('data-table', 'data'),
     Output('borough-injuries-chart', 'figure'), 
@@ -201,9 +194,9 @@ app.layout = dbc.Container([
     State('search-box', 'value'),
     State('borough-filter', 'value'),
     State('year-filter', 'value'),
-    State('vehicle-filter', 'value'), # Input kept, but filter is removed below
+    State('vehicle-filter', 'value'),
     State('factor-filter', 'value'),
-    State('injury-filter', 'value'),   # Input kept, but filter is removed below
+    State('injury-filter', 'value'),
 )
 def update_all(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, factor_sel, injury_sel):
 
@@ -211,8 +204,8 @@ def update_all(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, factor_se
     empty_fig = px.scatter(title="Data not loaded or filtered data is empty.", template='plotly_white')
 
     if df.empty:
-        # Return empty figures for all 6 charts
-        return "Data not loaded.", empty_fig, empty_fig, empty_fig, [], empty_fig, empty_fig
+        # Return empty figures for all 8 charts
+        return "Data not loaded.", empty_fig, empty_fig, empty_fig, empty_fig, empty_fig, [], empty_fig, empty_fig
 
     if not n_clicks:
         # Initial load condition: show a filtered sample to prevent crashing on large datasets
@@ -239,24 +232,23 @@ def update_all(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, factor_se
         if temp_year_sel and year_col:
             df_filtered = df_filtered[df_filtered[year_col].astype(str).isin([str(y) for y in temp_year_sel])]
 
+        if vehicle_sel and vehicle_col:
+            df_filtered = df_filtered[df_filtered[vehicle_col].isin(vehicle_sel)]
+
         if factor_sel and contrib_col:
             df_filtered = df_filtered[df_filtered[contrib_col].isin(factor_sel)]
-            
-        # --- FILTERS FOR REMOVED GRAPHS (vehicle_sel, injury_sel) COMMENTED OUT ---
-        # if vehicle_sel and vehicle_col:
-        #     df_filtered = df_filtered[df_filtered[vehicle_col].isin(vehicle_sel)]
 
-        # if injury_sel and injury_col:
-        #     df_filtered = df_filtered[df_filtered[injury_col].isin(injury_sel)]
-        
+        if injury_sel and injury_col:
+            df_filtered = df_filtered[df_filtered[injury_col].isin(injury_sel)]
+
         if person_type_col and person_type_col in parsed:
             df_filtered = df_filtered[df_filtered[person_type_col].str.contains(parsed[person_type_col], case=False, na=False)]
         # --- End Filtering Logic ---
 
     if df_filtered.empty:
         status = "No data matches the current filters."
-        # Return empty figures for all 6 charts
-        return status, empty_fig, empty_fig, empty_fig, [], empty_fig, empty_fig
+        # Return empty figures for all 8 charts
+        return status, empty_fig, empty_fig, empty_fig, empty_fig, empty_fig, [], empty_fig, empty_fig
 
     status = f"✅ {len(df_filtered)} rows matched."
     
@@ -279,25 +271,39 @@ def update_all(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, factor_se
     else:
         figures['line'] = px.line(title='Year or Collision ID data missing')
 
-    # # 3. Pie Chart (Person Type Distribution) - REMOVED
-    # if person_type_col in df_filtered.columns:
-    #     pie_data = df_filtered[person_type_col].dropna().value_counts().nlargest(10).reset_index()
-    #     pie_data.columns = [person_type_col, 'count']
-    #     figures['pie'] = px.pie(pie_data, names=person_type_col, values='count', title='Distribution of Involved Person Types (Top 10)', hole=0.3, template='plotly_white')
-    # else:
-    #     figures['pie'] = px.pie(title='Person Type data missing')
+    # 3. Pie Chart (Person Type Distribution)
+    if person_type_col in df_filtered.columns:
+        pie_data = df_filtered[person_type_col].dropna().value_counts().nlargest(10).reset_index()
+        pie_data.columns = [person_type_col, 'count']
+        figures['pie'] = px.pie(pie_data, names=person_type_col, values='count', title='Distribution of Involved Person Types (Top 10)', hole=0.3, template='plotly_white')
+    else:
+        figures['pie'] = px.pie(title='Person Type data missing')
 
-    # # 4. Heatmap (Year vs Borough) - REMOVED
-    # if year_col in df_filtered.columns and borough_col in df_filtered.columns:
-    #     heat_data = df_filtered.groupby([year_col, borough_col]).size().reset_index(name='count')
-    #     figures['heatmap'] = px.density_heatmap(heat_data, x=year_col, y=borough_col, z='count', title='Incidents: Year vs Borough Heatmap', template='plotly_white')
-    # else:
-    #     figures['heatmap'] = px.density_heatmap(title='Year or Borough data missing')
+    # 4. Heatmap changed to Grouped Bar Chart (Year vs Borough) for better readability
+    if year_col in df_filtered.columns and borough_col in df_filtered.columns:
+        # Data aggregation: count incidents by Year and Borough
+        heat_data = df_filtered.groupby([year_col, borough_col]).size().reset_index(name='count')
+        
+        figures['heatmap'] = px.bar(
+            heat_data, 
+            x=borough_col, 
+            y='count',
+            color=year_col, 
+            barmode='group', # Use grouped bars for easy comparison
+            title='Incidents by Borough and Year (Grouped Bar Chart)', 
+            template='plotly_white',
+            labels={'count': 'Number of Incidents', year_col: 'Year', borough_col: 'Borough'}
+        )
+        # Apply slight x-axis rotation for borough names
+        figures['heatmap'].update_xaxes(tickangle=30)
+    else:
+        figures['heatmap'] = px.bar(title='Year or Borough data missing')
 
     # 5. Map Chart (Geographical Distribution)
     if lat_col in df_filtered.columns and lon_col in df_filtered.columns and injured_col in df_filtered.columns and killed_col in df_filtered.columns and not df_filtered[[lat_col, lon_col]].dropna().empty:
         df_map = df_filtered.dropna(subset=[lat_col, lon_col]).copy()
         
+        # Recalculate Severity (just in case)
         df_map['SEVERITY'] = df_map[injured_col] + df_map[killed_col]
         df_map['SEVERITY_SIZE'] = df_map['SEVERITY'].apply(lambda x: 1 if x == 0 else (x * 2)) 
         
@@ -317,6 +323,7 @@ def update_all(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, factor_se
     # 6. Total Injured Persons per Borough
     if borough_col in df_filtered.columns and injured_col in df_filtered.columns and collision_id_col in df_filtered.columns:
         df_collision_level = df_filtered.drop_duplicates(subset=[collision_id_col]).copy()
+        # Ensure sum uses the cleaned numeric column
         injuries_data = df_collision_level.groupby(borough_col)[injured_col].sum().reset_index(name='Total Injured')
         
         figures['borough_injuries'] = px.bar(injuries_data, x=borough_col, y='Total Injured',
@@ -328,6 +335,7 @@ def update_all(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, factor_se
     # 7. Killed vs. Injured Over Time
     if year_col in df_filtered.columns and killed_col in df_filtered.columns and injured_col in df_filtered.columns and collision_id_col in df_filtered.columns:
         df_collision_level = df_filtered.drop_duplicates(subset=[collision_id_col]).copy()
+        # Ensure sum uses the cleaned numeric columns
         severity_data = df_collision_level.groupby(year_col)[[killed_col, injured_col]].sum().reset_index()
 
         severity_long = pd.melt(severity_data, id_vars=[year_col], 
@@ -349,10 +357,9 @@ def update_all(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, factor_se
 
     table_data = df_filtered.head(1000).to_dict('records')
 
-    # Return order: status, bar, line, map, table, borough_injuries, killed_injured (6 figures + table data)
-    return status, figures['bar'], figures['line'], figures['map'], table_data, figures['borough_injuries'], figures['killed_injured']
+    # Ensure the return order matches the Output order! (8 outputs now)
+    return status, figures['bar'], figures['line'], figures['pie'], figures['heatmap'], figures['map'], table_data, figures['borough_injuries'], figures['killed_injured']
 
-# Download callback (only for reference, not modified in the patch)
 @app.callback(
     Output('download-report', 'data'),
     Input('download-btn', 'n_clicks'),
@@ -410,6 +417,21 @@ def download_report(n_clicks, search_q, borough_sel, year_sel, vehicle_sel, fact
         injuries_data = df_collision_level.groupby(borough_col)[injured_col].sum().reset_index(name='Total Injured')
         figs['Total Injured Persons per Borough'] = px.bar(injuries_data, x=borough_col, y='Total Injured',
                                              title='Total Injured Persons per Borough')
+
+    # 4. Heatmap changed to Grouped Bar Chart (Year vs Borough)
+    if year_col in df_filtered.columns and borough_col in df_filtered.columns:
+        heat_data = df_filtered.groupby([year_col, borough_col]).size().reset_index(name='count')
+        figs['Incidents by Borough and Year (Grouped Bar Chart)'] = px.bar(
+            heat_data, 
+            x=borough_col, 
+            y='count',
+            color=year_col, 
+            barmode='group',
+            title='Incidents by Borough and Year (Grouped Bar Chart)',
+            labels={'count': 'Number of Incidents', year_col: 'Year', borough_col: 'Borough'}
+        )
+        figs['Incidents by Borough and Year (Grouped Bar Chart)'].update_xaxes(tickangle=30)
+
 
     html_bytes = create_html_report(figs, df_filtered)
     filename = f"report_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.html"
