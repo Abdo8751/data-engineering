@@ -29,11 +29,12 @@ The final, functional dashboard is hosted on PythonAnywhere.
 
 
 
-yousef moataz:                                      Led the setup of the project’s Colab notebook and was responsible for the complete data cleaning process, including                                                 both pre- and post-integration phases. Ensured data consistency, handled missing values, and standardized
+Yousef Moataz:                                      Led the setup of the project’s Colab notebook and was responsible for the complete data cleaning process, including                                                 both pre- and post-integration phases. Ensured data consistency, handled missing values, and standardized
                                                 formats across datasets. Additionally, contributed to the visualization phase by designing and developing an
                                                 interactive Power BI dashboard that highlights key insights and supports dynamic data exploration.
 
-Abdelrahman Abualhuda
+Abdelrahman Abualhuda :
+Took on the development of the website on a copy of the Colab notebook. Created the navigation logic and handled all necessary imports that we needed in the website. Hosted website on [http://abdelrhman123456.pythonanywhere.com](http://abdelrhman123456.pythonanywhere.com
 
 
 
