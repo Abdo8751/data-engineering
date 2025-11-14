@@ -43,7 +43,7 @@ Lujyne Selim
 
 
 
-Rana meligy
+Rana meligy:               My primary responsibility was the direct implementation and integration of the core analytical visualizations in the dashboard. I developed and                               deployed four crucial components: the Top 10 Contributing Factors bar chart, the Total Crashes Over Time line chart, the Total Injured Persons per                            Borough bar chart, and the Total Killed versus Injured Persons Over Time area chart. This work involved ensuring the underlying data processing                               and accurate representation of these key metrics, forming the backbone of the dashboard's initial functionality and reporting capabilities.
 
 
 
