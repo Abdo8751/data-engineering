@@ -38,8 +38,8 @@ Took on the development of the website on a copy of the Colab notebook. Created 
 
 
 
-Lujyne Selim
-
+Lujyne Selim: 
+Helped establish the project’s Colab workspace and carried out the full data cleaning workflow before and after dataset integration, addressing missing values and unifying data formats. Additionally, developed the research questions that guided the project.
 
 
 
